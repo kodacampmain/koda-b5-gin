@@ -16,6 +16,11 @@ func NewRootController() *RootController {
 
 func (r *RootController) GetRoot(c *gin.Context) {
 	whoami := c.GetHeader("x-who-am-i")
+	// Set CORS Header
+	// c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
+
+	log.Println("CONTROLLER/HANDLER")
+
 	c.JSON(http.StatusOK, gin.H{
 		"msg":    "Selamat Datang",
 		"whoami": whoami,
@@ -23,6 +28,8 @@ func (r *RootController) GetRoot(c *gin.Context) {
 }
 
 func (r *RootController) PostRoot(c *gin.Context) {
+	// Set CORS Header
+	// c.Header("Access-Control-Allow-Origin", "http://localhost:5500")
 	// reading body
 	var body dto.PostBody
 	if err := c.ShouldBindJSON(&body); err != nil {
