@@ -1,1 +1,5 @@
 *.http
+
+.env.production
+.env.staging
+.env
