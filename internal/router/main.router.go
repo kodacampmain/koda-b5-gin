@@ -27,6 +27,7 @@ func Init(app *gin.Engine, db *pgxpool.Pool) {
 	app.GET("/movies/:id/:slug", movieController.GetMoviesWithIdAndSlug)
 	app.GET("/movies", movieController.SearchAndFilterMoviesWithPagination)
 	app.GET("/users", userController.GetUsers)
+	app.POST("/users", userController.AddUser)
 }
 
 func MyMiddleware(c *gin.Context) {

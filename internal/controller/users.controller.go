@@ -1,9 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kodacampmain/koda-b5-gin/internal/dto"
 	"github.com/kodacampmain/koda-b5-gin/internal/service"
 )
 
@@ -31,4 +34,50 @@ func (u UserController) GetUsers(c *gin.Context) {
 	})
 }
 
-func (u UserController) AddUser(c *gin.Context) {}
+func (u UserController) AddUser(c *gin.Context) {
+	var newUser dto.NewUser
+	if err := c.ShouldBindJSON(&newUser); err != nil {
+		c.JSON(http.StatusInternalServerError, dto.Response{
+			Msg:     "Internal Server Error",
+			Success: false,
+			Error:   "internal server error",
+			Data:    []any{},
+		})
+		return
+	}
+	data, err := u.userService.AddUser(c.Request.Context(), newUser)
+	if err != nil {
+		// Expected Error
+		if errors.Is(err, service.ErrInvalidGender) {
+			c.JSON(http.StatusBadRequest, dto.Response{
+				Msg:     "Bad Request",
+				Success: false,
+				Error:   err.Error(),
+				Data:    []any{},
+			})
+			return
+		}
+		if strings.Contains(err.Error(), "duplicate key value") {
+			c.JSON(http.StatusBadRequest, dto.Response{
+				Msg:     "Bad Request",
+				Success: false,
+				Error:   "Name already in use",
+				Data:    []any{},
+			})
+			return
+		}
+		// Unexpected Error
+		c.JSON(http.StatusInternalServerError, dto.Response{
+			Msg:     "Internal Server Error",
+			Success: false,
+			Error:   "internal server error",
+			Data:    []any{},
+		})
+		return
+	}
+	c.JSON(http.StatusCreated, dto.Response{
+		Msg:     "Create User Success",
+		Success: true,
+		Data:    []any{data},
+	})
+}

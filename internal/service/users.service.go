@@ -2,10 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
+	"log"
+	"slices"
 
 	"github.com/kodacampmain/koda-b5-gin/internal/dto"
 	"github.com/kodacampmain/koda-b5-gin/internal/repository"
 )
+
+var ErrInvalidGender = errors.New("invalid gender")
 
 type UserService struct {
 	userRepository *repository.UserRepository
@@ -31,4 +36,23 @@ func (u UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 		})
 	}
 	return response, nil
+}
+
+func (u UserService) AddUser(ctx context.Context, newUser dto.NewUser) (dto.User, error) {
+	validGender := []string{"L", "P"}
+	if !slices.Contains(validGender, newUser.Gender) {
+		return dto.User{}, ErrInvalidGender
+	}
+	data, err := u.userRepository.CreateNewUser(ctx, newUser)
+	if err != nil {
+		log.Println(err.Error())
+		return dto.User{}, err
+	}
+	response := dto.User{
+		Id:     data.Id,
+		Gender: data.Gender,
+		Name:   data.Name,
+	}
+	return response, nil
+
 }
