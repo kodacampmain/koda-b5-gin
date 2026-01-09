@@ -14,3 +14,8 @@ type PaginationMeta struct {
 	NextPage  string `json:"next_page,omitempty"`
 	PrevPage  string `json:"prev_page,omitempty"`
 }
+
+type RootResponse struct {
+	Msg    string `json:"msg"`
+	WhoAmI string `json:"whoami"`
+}

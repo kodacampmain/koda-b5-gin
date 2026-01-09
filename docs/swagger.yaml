@@ -1,0 +1,94 @@
+basePath: /
+definitions:
+  dto.PaginationMeta:
+    properties:
+      next_page:
+        type: string
+      page:
+        type: integer
+      prev_page:
+        type: string
+      total_page:
+        type: integer
+    type: object
+  dto.PostBody:
+    properties:
+      age:
+        example: 24
+        type: integer
+      name:
+        example: fadhlul
+        type: string
+    type: object
+  dto.Response:
+    properties:
+      data:
+        items: {}
+        type: array
+      error:
+        type: string
+      meta:
+        $ref: '#/definitions/dto.PaginationMeta'
+      msg:
+        type: string
+      success:
+        type: boolean
+    type: object
+  dto.RootResponse:
+    properties:
+      msg:
+        type: string
+      whoami:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend class using go with gin
+  title: Koda 5 Gin
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Trying root controller with header
+      parameters:
+      - description: custom header
+        in: header
+        name: x-who-am-i
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RootResponse'
+      summary: Trying root controller
+      tags:
+      - root
+    post:
+      consumes:
+      - application/json
+      description: Trying root controller with body
+      parameters:
+      - description: user body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PostBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RootResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      summary: Trying root controller
+      tags:
+      - root
+swagger: "2.0"

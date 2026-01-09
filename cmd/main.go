@@ -9,6 +9,11 @@ import (
 	"github.com/kodacampmain/koda-b5-gin/internal/router"
 )
 
+// @title           Koda 5 Gin
+// @version         1.0
+// @description     Backend class using go with gin
+// @host      		localhost:8080
+// @BasePath  		/
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to Load env")

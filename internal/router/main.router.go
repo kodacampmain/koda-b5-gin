@@ -5,11 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/kodacampmain/koda-b5-gin/docs"
 	"github.com/kodacampmain/koda-b5-gin/internal/middleware"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Init(app *gin.Engine, db *pgxpool.Pool) {
 	app.Use(middleware.CORSMiddleware, MyMiddleware)
+
+	app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	RegisterRootRouter(app)
 	RegisterMovieRouter(app)
