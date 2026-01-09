@@ -14,11 +14,14 @@ import (
 var ErrInvalidGender = errors.New("invalid gender")
 
 type User struct {
+	Id       int    `json:"-"`
 	Email    string `json:"email"`
 	Password string `json:"pwd"`
+	Role     string `json:"role"`
 }
 
 var users = make([]User, 0)
+var id = 1
 
 type UserService struct {
 	userRepository *repository.UserRepository
@@ -75,20 +78,25 @@ func (u UserService) Register(newUser User) error {
 	}
 
 	users = append(users, User{
+		Id:       id,
 		Email:    newUser.Email,
 		Password: hp,
+		Role:     newUser.Role,
 	})
+	id++
 
 	return nil
 }
 
-func (u UserService) Login(newUser User) (bool, error) {
-	log.Println(users)
+func (u UserService) Login(newUser *User) (bool, error) {
+	// log.Println(users)
 	var hp string
 	for _, v := range users {
 		// log.Println(v.Email, newUser.Email)
 		if v.Email == newUser.Email {
 			hp = v.Password
+			newUser.Id = v.Id
+			newUser.Role = v.Role
 		}
 	}
 	// log.Println(hp, len(hp))
@@ -97,4 +105,10 @@ func (u UserService) Login(newUser User) (bool, error) {
 	}
 	hc := pkg.HashConfig{}
 	return hc.ComparePwdAndHash(newUser.Password, hp)
+}
+
+func (u UserService) GenJWTToken(user User) (string, error) {
+	claims := pkg.NewJWTClaims(user.Id, user.Role)
+	return claims.GenToken()
+
 }

@@ -20,7 +20,7 @@ func CORSMiddleware(c *gin.Context) {
 		log.Printf("Origin is not in the Whitelist: %s", origin)
 	}
 	// Allowed Header
-	allowedHeaders := []string{"x-who-am-i", "Content-Type"}
+	allowedHeaders := []string{"x-who-am-i", "Content-Type", "Authorization"}
 	c.Header("Access-Control-Allow-Headers", strings.Join(allowedHeaders, ", "))
 	// Allowed Methods
 	allowedMethod := []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead}

@@ -121,7 +121,7 @@ func (u UserController) Login(c *gin.Context) {
 		})
 		return
 	}
-	isValid, err := u.userService.Login(newUser)
+	isValid, err := u.userService.Login(&newUser)
 	if err != nil {
 		log.Println(err.Error())
 		if strings.Contains(err.Error(), "email/password is wrong") {
@@ -141,7 +141,7 @@ func (u UserController) Login(c *gin.Context) {
 		})
 		return
 	}
-	log.Println("isvalid", isValid)
+	// log.Println("isvalid", isValid)
 	if !isValid {
 		c.JSON(http.StatusBadRequest, dto.Response{
 			Msg:     "Bad Request",
@@ -151,9 +151,23 @@ func (u UserController) Login(c *gin.Context) {
 		})
 		return
 	}
+	token, err := u.userService.GenJWTToken(newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.Response{
+			Msg:     "Internal Server Error",
+			Success: false,
+			Error:   "internal server error",
+			Data:    []any{},
+		})
+		return
+	}
 	c.JSON(http.StatusOK, dto.Response{
 		Msg:     "Login Success",
 		Success: true,
-		Data:    []any{},
+		Data: []any{
+			gin.H{
+				"token": token,
+			},
+		},
 	})
 }
