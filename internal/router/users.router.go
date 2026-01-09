@@ -18,4 +18,7 @@ func RegisterUserRouter(app *gin.Engine, db *pgxpool.Pool) {
 
 	userRouter.GET("/", userController.GetUsers)
 	userRouter.POST("/", userController.AddUser)
+
+	userRouter.POST("/auth/new", userController.Register)
+	userRouter.POST("/auth", userController.Login)
 }

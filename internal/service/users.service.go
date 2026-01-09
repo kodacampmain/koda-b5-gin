@@ -8,9 +8,17 @@ import (
 
 	"github.com/kodacampmain/koda-b5-gin/internal/dto"
 	"github.com/kodacampmain/koda-b5-gin/internal/repository"
+	"github.com/kodacampmain/koda-b5-gin/pkg"
 )
 
 var ErrInvalidGender = errors.New("invalid gender")
+
+type User struct {
+	Email    string `json:"email"`
+	Password string `json:"pwd"`
+}
+
+var users = make([]User, 0)
 
 type UserService struct {
 	userRepository *repository.UserRepository
@@ -55,4 +63,38 @@ func (u UserService) AddUser(ctx context.Context, newUser dto.NewUser) (dto.User
 	}
 	return response, nil
 
+}
+
+func (u UserService) Register(newUser User) error {
+	hc := pkg.HashConfig{}
+	hc.UseRecommended()
+
+	hp, err := hc.GenHash(newUser.Password)
+	if err != nil {
+		return err
+	}
+
+	users = append(users, User{
+		Email:    newUser.Email,
+		Password: hp,
+	})
+
+	return nil
+}
+
+func (u UserService) Login(newUser User) (bool, error) {
+	log.Println(users)
+	var hp string
+	for _, v := range users {
+		// log.Println(v.Email, newUser.Email)
+		if v.Email == newUser.Email {
+			hp = v.Password
+		}
+	}
+	// log.Println(hp, len(hp))
+	if len(hp) == 0 {
+		return false, errors.New("email/password is wrong")
+	}
+	hc := pkg.HashConfig{}
+	return hc.ComparePwdAndHash(newUser.Password, hp)
 }
