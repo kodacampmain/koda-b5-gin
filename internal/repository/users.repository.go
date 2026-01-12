@@ -26,6 +26,7 @@ func (u UserRepository) GetUsers(ctx context.Context) ([]model.User, error) {
 		log.Println(err.Error())
 		return nil, err
 	}
+	defer rows.Close()
 	var users []model.User
 	for rows.Next() {
 		var user model.User
