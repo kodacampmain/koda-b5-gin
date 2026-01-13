@@ -76,10 +76,12 @@ func (u UserController) AddUser(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusCreated, dto.Response{
-		Msg:     "Create User Success",
-		Success: true,
-		Data:    []any{data},
+	c.JSON(http.StatusCreated, dto.UsersResponse{
+		Response: dto.Response{
+			Msg:     "Create User Success",
+			Success: true,
+		},
+		Data: []dto.User{data},
 	})
 }
 

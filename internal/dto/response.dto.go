@@ -5,7 +5,7 @@ type Response struct {
 	Success bool           `json:"success"`
 	Data    []any          `json:"data"`
 	Error   string         `json:"error,omitempty"`
-	Meta    PaginationMeta `json:"meta,omitempty"`
+	Meta    PaginationMeta `json:"meta"`
 }
 
 type PaginationMeta struct {
@@ -18,4 +18,9 @@ type PaginationMeta struct {
 type RootResponse struct {
 	Msg    string `json:"msg"`
 	WhoAmI string `json:"whoami"`
+}
+
+type UsersResponse struct {
+	Response
+	Data []User `json:"data"`
 }
