@@ -3,3 +3,14 @@
 .env.production
 .env.staging
 .env
+
+tmp
+.air.toml
+
+public/html/*
+public/profile/*
+!public/**/*.md
+
+# /public/profile/*.jpg
+# /public/profile/*.png
+# /public/html/*.html

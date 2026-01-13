@@ -2,13 +2,21 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/kodacampmain/koda-b5-gin/internal/dto"
+	"github.com/kodacampmain/koda-b5-gin/internal/err"
 	"github.com/kodacampmain/koda-b5-gin/internal/service"
+	"github.com/kodacampmain/koda-b5-gin/pkg"
 )
 
 type UserController struct {
@@ -38,6 +46,16 @@ func (u UserController) GetUsers(c *gin.Context) {
 func (u UserController) AddUser(c *gin.Context) {
 	var newUser dto.NewUser
 	if err := c.ShouldBindJSON(&newUser); err != nil {
+		log.Println(err.Error())
+		if strings.Contains(err.Error(), "required") {
+			c.JSON(http.StatusBadRequest, dto.Response{
+				Msg:     "Register have to include all field: email, password, gender",
+				Success: false,
+				Error:   "Bad request",
+				Data:    []any{},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.Response{
 			Msg:     "Internal Server Error",
 			Success: false,
@@ -46,7 +64,7 @@ func (u UserController) AddUser(c *gin.Context) {
 		})
 		return
 	}
-	data, err := u.userService.AddUser(c.Request.Context(), newUser)
+	data, err := u.userService.Register(c.Request.Context(), newUser)
 	if err != nil {
 		// Expected Error
 		if errors.Is(err, service.ErrInvalidGender) {
@@ -62,7 +80,7 @@ func (u UserController) AddUser(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, dto.Response{
 				Msg:     "Bad Request",
 				Success: false,
-				Error:   "Name already in use",
+				Error:   "Email already registered",
 				Data:    []any{},
 			})
 			return
@@ -85,9 +103,11 @@ func (u UserController) AddUser(c *gin.Context) {
 	})
 }
 
-func (u UserController) Register(c *gin.Context) {
-	var newUser service.User
-	if err := c.ShouldBindJSON(&newUser); err != nil {
+func (u UserController) EditProfile(c *gin.Context) {
+	// Data binding
+	var user dto.EditUser
+	if e := c.ShouldBindWith(&user, binding.FormMultipart); e != nil {
+		log.Println("binding", e.Error())
 		c.JSON(http.StatusInternalServerError, dto.Response{
 			Msg:     "Internal Server Error",
 			Success: false,
@@ -96,25 +116,106 @@ func (u UserController) Register(c *gin.Context) {
 		})
 		return
 	}
-	if err := u.userService.Register(newUser); err != nil {
+	// akses claims
+	token, _ := c.Get("token")
+	accessToken, _ := token.(pkg.JWTClaims)
+	// validasi ekstensi (jpg, png)
+	ext := path.Ext(user.Image.Filename)
+	re := regexp.MustCompile("^[.](jpg|png)$")
+	if !re.Match([]byte(ext)) {
 		c.JSON(http.StatusBadRequest, dto.Response{
-			Msg:     "Bad Request",
+			Msg:     err.ErrInvalidExt.Error(),
+			Error:   "Bad Request",
 			Success: false,
-			Error:   "Failed To Register",
 			Data:    []any{},
 		})
 		return
 	}
-	c.JSON(http.StatusCreated, dto.Response{
-		Msg:     "Register Success",
+	// validasi ukuran
+	// validasi banyak (multi upload)
+
+	// Misal image akan ditaruh di /namaFile.ext
+	// timestamp_function.ext
+	filename := fmt.Sprintf("%d_profile_%d%s", time.Now().UnixNano(), accessToken.Id, ext)
+
+	// save upload file
+	// 1. simpan di db (sbg blob)
+	// 2. simpan di storage (yg di demo kan)
+	// 3. simpan di cloud (buat reusable code untuk cloud service)
+	if e := c.SaveUploadedFile(user.Image, filepath.Join("public", "profile", filename)); e != nil {
+		log.Println(e.Error())
+		c.JSON(http.StatusInternalServerError, dto.Response{
+			Msg:     "Internal Server Error",
+			Success: false,
+			Error:   "internal server error",
+			Data:    []any{},
+		})
+		return
+	}
+
+	if e := u.userService.UpdateImage(c.Request.Context(), fmt.Sprintf("/profile/%s", filename), accessToken.Id); e != nil {
+		log.Println(e.Error())
+		if errors.Is(e, err.ErrNoRowsUpdated) {
+			c.JSON(http.StatusNotFound, dto.Response{
+				Msg:     e.Error(),
+				Success: false,
+				Error:   "User not found",
+				Data:    []any{},
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.Response{
+			Msg:     "Internal Server Error",
+			Success: false,
+			Error:   "internal server error",
+			Data:    []any{},
+		})
+		return
+	}
+
+	// logika untuk menghapus file lama
+
+	c.JSON(http.StatusOK, dto.Response{
+		Msg:     "OK",
 		Success: true,
-		Data:    []any{},
+		Data: []any{
+			gin.H{
+				"img": fmt.Sprintf("/profile/%s", filename),
+			},
+		},
 	})
 }
 
+// func (u UserController) Register(c *gin.Context) {
+// 	var newUser service.User
+// 	if err := c.ShouldBindJSON(&newUser); err != nil {
+// 		c.JSON(http.StatusInternalServerError, dto.Response{
+// 			Msg:     "Internal Server Error",
+// 			Success: false,
+// 			Error:   "internal server error",
+// 			Data:    []any{},
+// 		})
+// 		return
+// 	}
+// 	if err := u.userService.Register(newUser); err != nil {
+// 		c.JSON(http.StatusBadRequest, dto.Response{
+// 			Msg:     "Bad Request",
+// 			Success: false,
+// 			Error:   "Failed To Register",
+// 			Data:    []any{},
+// 		})
+// 		return
+// 	}
+// 	c.JSON(http.StatusCreated, dto.Response{
+// 		Msg:     "Register Success",
+// 		Success: true,
+// 		Data:    []any{},
+// 	})
+// }
+
 func (u UserController) Login(c *gin.Context) {
-	var newUser service.User
-	if err := c.ShouldBindJSON(&newUser); err != nil {
+	var user dto.UserLogin
+	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, dto.Response{
 			Msg:     "Internal Server Error",
 			Success: false,
@@ -123,7 +224,7 @@ func (u UserController) Login(c *gin.Context) {
 		})
 		return
 	}
-	isValid, err := u.userService.Login(&newUser)
+	userInfo, err := u.userService.Login(c.Request.Context(), user.Email, user.Password)
 	if err != nil {
 		log.Println(err.Error())
 		if strings.Contains(err.Error(), "email/password is wrong") {
@@ -143,18 +244,9 @@ func (u UserController) Login(c *gin.Context) {
 		})
 		return
 	}
-	// log.Println("isvalid", isValid)
-	if !isValid {
-		c.JSON(http.StatusBadRequest, dto.Response{
-			Msg:     "Bad Request",
-			Success: false,
-			Error:   "email/password is wrong",
-			Data:    []any{},
-		})
-		return
-	}
-	token, err := u.userService.GenJWTToken(newUser)
+	token, err := u.userService.GenJWTToken(userInfo)
 	if err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, dto.Response{
 			Msg:     "Internal Server Error",
 			Success: false,

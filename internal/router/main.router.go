@@ -2,6 +2,7 @@ package router
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,9 +17,16 @@ func Init(app *gin.Engine, db *pgxpool.Pool) {
 
 	app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	app.Static("/static/img", "public")
+	app.Static("/static/pages", "public/html")
+
 	RegisterRootRouter(app)
 	RegisterMovieRouter(app)
 	RegisterUserRouter(app, db)
+
+	app.NoRoute(func(ctx *gin.Context) {
+		ctx.Redirect(http.StatusTemporaryRedirect, "/static/pages/not-found.html")
+	})
 }
 
 func MyMiddleware(c *gin.Context) {
