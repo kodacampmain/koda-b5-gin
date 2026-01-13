@@ -23,16 +23,16 @@ var ErrInvalidGender = errors.New("invalid gender")
 // var id = 1
 
 type UserService struct {
-	userRepository *repository.UserRepository
+	userRepository repository.UserRepo
 }
 
-func NewUserService(userRepository *repository.UserRepository) *UserService {
+func NewUserService(userRepository repository.UserRepo) *UserService {
 	return &UserService{
 		userRepository: userRepository,
 	}
 }
 
-func (u UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
+func (u *UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 	data, err := u.userRepository.GetUsers(ctx)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (u UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 // 	return response, nil
 // }
 
-func (u UserService) UpdateImage(ctx context.Context, profileImg string, id int) error {
+func (u *UserService) UpdateImage(ctx context.Context, profileImg string, id int) error {
 	cmd, e := u.userRepository.EditProfile(ctx, profileImg, id)
 	if e != nil {
 		return e
@@ -77,7 +77,7 @@ func (u UserService) UpdateImage(ctx context.Context, profileImg string, id int)
 	return nil
 }
 
-func (u UserService) Register(ctx context.Context, newUser dto.NewUser) (dto.User, error) {
+func (u *UserService) Register(ctx context.Context, newUser dto.NewUser) (dto.User, error) {
 	hc := pkg.HashConfig{}
 	hc.UseRecommended()
 
@@ -106,7 +106,7 @@ func (u UserService) Register(ctx context.Context, newUser dto.NewUser) (dto.Use
 	return user, nil
 }
 
-func (u UserService) Login(ctx context.Context, email string, password string) (dto.User, error) {
+func (u *UserService) Login(ctx context.Context, email string, password string) (dto.User, error) {
 	// log.Println(users)
 	// var hp string
 	// for _, v := range users {
@@ -136,7 +136,7 @@ func (u UserService) Login(ctx context.Context, email string, password string) (
 	}, nil
 }
 
-func (u UserService) GenJWTToken(user dto.User) (string, error) {
+func (u *UserService) GenJWTToken(user dto.User) (string, error) {
 	claims := pkg.NewJWTClaims(user.Id, user.Role)
 	return claims.GenToken()
 

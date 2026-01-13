@@ -13,6 +13,7 @@ func RegisterUserRouter(app *gin.Engine, db *pgxpool.Pool) {
 	userRouter := app.Group("/users")
 
 	userRepository := repository.NewUserRepository(db)
+	// userRepository := repository.NewUserRepositoryMock()
 	userService := service.NewUserService(userRepository)
 	// userv2Service := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)

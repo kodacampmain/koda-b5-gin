@@ -10,6 +10,13 @@ import (
 	"github.com/kodacampmain/koda-b5-gin/internal/model"
 )
 
+type UserRepo interface {
+	GetUsers(ctx context.Context) ([]model.User, error)
+	CreateNewUser(ctx context.Context, newUser dto.NewUser, hashedPwd string) (model.User, error)
+	GetPwdFromEmail(ctx context.Context, email string) (model.User, error)
+	EditProfile(ctx context.Context, profileImg string, id int) (pgconn.CommandTag, error)
+}
+
 type UserRepository struct {
 	db *pgxpool.Pool
 }
