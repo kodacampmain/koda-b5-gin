@@ -16,12 +16,13 @@ func NewUserRepositoryMock() *userRepositoryMock {
 }
 
 func (u userRepositoryMock) GetUsers(ctx context.Context) ([]model.User, error) {
+	image := "a.jpg"
 	return []model.User{
 		{
 			Id:         1,
 			Gender:     "P",
 			Email:      "mail@mail.com",
-			ProfileImg: "a.jpg",
+			ProfileImg: &image,
 			Password:   "blabla",
 			Role:       "admin",
 		},

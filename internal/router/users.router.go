@@ -7,14 +7,15 @@ import (
 	"github.com/kodacampmain/koda-b5-gin/internal/middleware"
 	"github.com/kodacampmain/koda-b5-gin/internal/repository"
 	"github.com/kodacampmain/koda-b5-gin/internal/service"
+	"github.com/redis/go-redis/v9"
 )
 
-func RegisterUserRouter(app *gin.Engine, db *pgxpool.Pool) {
+func RegisterUserRouter(app *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userRouter := app.Group("/users")
 
 	userRepository := repository.NewUserRepository(db)
 	// userRepository := repository.NewUserRepositoryMock()
-	userService := service.NewUserService(userRepository)
+	userService := service.NewUserService(userRepository, rdb)
 	// userv2Service := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)
 

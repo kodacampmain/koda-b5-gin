@@ -25,10 +25,14 @@ func main() {
 		log.Println("Failed to Connect to Database")
 		return
 	}
+	defer db.Close()
+	// redis initialization
+	rdb := config.InitRedis()
+	defer rdb.Close()
 	// gin initialization
 	app := gin.Default()
 	// routing
-	router.Init(app, db)
+	router.Init(app, db, rdb)
 	// starting and serving
 	app.Run("localhost:8080")
 	// app.Run(":8080")

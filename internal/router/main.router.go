@@ -8,11 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/kodacampmain/koda-b5-gin/docs"
 	"github.com/kodacampmain/koda-b5-gin/internal/middleware"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func Init(app *gin.Engine, db *pgxpool.Pool) {
+func Init(app *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	app.Use(middleware.CORSMiddleware, MyMiddleware)
 
 	app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -22,7 +23,7 @@ func Init(app *gin.Engine, db *pgxpool.Pool) {
 
 	RegisterRootRouter(app)
 	RegisterMovieRouter(app)
-	RegisterUserRouter(app, db)
+	RegisterUserRouter(app, db, rdb)
 
 	app.NoRoute(func(ctx *gin.Context) {
 		ctx.Redirect(http.StatusTemporaryRedirect, "/static/pages/not-found.html")

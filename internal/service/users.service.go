@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/kodacampmain/koda-b5-gin/internal/dto"
 	"github.com/kodacampmain/koda-b5-gin/internal/err"
 	"github.com/kodacampmain/koda-b5-gin/internal/repository"
 	"github.com/kodacampmain/koda-b5-gin/pkg"
+	"github.com/redis/go-redis/v9"
 )
 
 var ErrInvalidGender = errors.New("invalid gender")
@@ -24,15 +27,40 @@ var ErrInvalidGender = errors.New("invalid gender")
 
 type UserService struct {
 	userRepository repository.UserRepo
+	redis          *redis.Client
 }
 
-func NewUserService(userRepository repository.UserRepo) *UserService {
+func NewUserService(userRepository repository.UserRepo, rdb *redis.Client) *UserService {
 	return &UserService{
 		userRepository: userRepository,
+		redis:          rdb,
 	}
 }
 
 func (u *UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
+	// cek cache
+	rkey := "fakhri:koda5:users"
+	rsc := u.redis.Get(ctx, rkey)
+	// cache hit
+	if rsc.Err() == nil {
+		var result []dto.User
+		cache, err := rsc.Bytes()
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			err := json.Unmarshal(cache, &result)
+			if err != nil {
+				log.Println(err.Error())
+			} else {
+				return result, nil
+			}
+		}
+	}
+	// cache miss
+	if rsc.Err() == redis.Nil {
+		log.Println("users cache miss")
+	}
+
 	data, err := u.userRepository.GetUsers(ctx)
 	if err != nil {
 		return nil, err
@@ -45,6 +73,20 @@ func (u *UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 			Gender: v.Gender,
 		})
 	}
+
+	// redis cache rehydration
+	cachestr, err := json.Marshal(response)
+	if err != nil {
+		log.Println(err.Error())
+		log.Println("failed to marshal")
+	} else {
+		status := u.redis.Set(ctx, rkey, string(cachestr), 0)
+		if status.Err() != nil {
+			log.Println("caching failed")
+			log.Println(status.Err().Error())
+		}
+	}
+
 	return response, nil
 }
 
@@ -74,6 +116,7 @@ func (u *UserService) UpdateImage(ctx context.Context, profileImg string, id int
 	if cmd.RowsAffected() == 0 {
 		return err.ErrNoRowsUpdated
 	}
+	// invalidasi cache
 	return nil
 }
 
