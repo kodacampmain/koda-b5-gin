@@ -14,5 +14,5 @@ func RegisterMovieRouter(app *gin.Engine) {
 	moviesRouter.Use(middleware.VerifyJWT)
 
 	moviesRouter.GET("/:id/:slug", middleware.AdminOnly, movieController.GetMoviesWithIdAndSlug)
-	moviesRouter.GET("/", middleware.UserOnly, movieController.SearchAndFilterMoviesWithPagination)
+	moviesRouter.GET("/", movieController.SearchAndFilterMoviesWithPagination)
 }

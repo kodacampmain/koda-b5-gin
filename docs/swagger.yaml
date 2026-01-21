@@ -91,4 +91,33 @@ paths:
       summary: Trying root controller
       tags:
       - root
+  /movies:
+    get:
+      description: Filtering movie by title and genre with pagination
+      parameters:
+      - description: movie title
+        in: query
+        name: title
+        type: string
+      - collectionFormat: multi
+        description: movie genres
+        in: query
+        items:
+          type: string
+        name: genre
+        type: array
+      - description: pagination
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+      summary: Filtering movie by title and genre
+      tags:
+      - movies
 swagger: "2.0"
