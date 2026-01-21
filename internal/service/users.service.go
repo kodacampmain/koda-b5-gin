@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kodacampmain/koda-b5-gin/internal/dto"
 	"github.com/kodacampmain/koda-b5-gin/internal/err"
 	"github.com/kodacampmain/koda-b5-gin/internal/repository"
@@ -28,12 +29,14 @@ var ErrInvalidGender = errors.New("invalid gender")
 type UserService struct {
 	userRepository repository.UserRepo
 	redis          *redis.Client
+	db             *pgxpool.Pool
 }
 
-func NewUserService(userRepository repository.UserRepo, rdb *redis.Client) *UserService {
+func NewUserService(userRepository repository.UserRepo, rdb *redis.Client, db *pgxpool.Pool) *UserService {
 	return &UserService{
 		userRepository: userRepository,
 		redis:          rdb,
+		db:             db,
 	}
 }
 
@@ -61,7 +64,7 @@ func (u *UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 		log.Println("users cache miss")
 	}
 
-	data, err := u.userRepository.GetUsers(ctx)
+	data, err := u.userRepository.GetUsers(ctx, u.db)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +112,7 @@ func (u *UserService) GetUsers(ctx context.Context) ([]dto.User, error) {
 // }
 
 func (u *UserService) UpdateImage(ctx context.Context, profileImg string, id int) error {
-	cmd, e := u.userRepository.EditProfile(ctx, profileImg, id)
+	cmd, e := u.userRepository.EditProfile(ctx, u.db, profileImg, id)
 	if e != nil {
 		return e
 	}
@@ -126,20 +129,36 @@ func (u *UserService) Register(ctx context.Context, newUser dto.NewUser) (dto.Us
 
 	hp, err := hc.GenHash(newUser.Password)
 	if err != nil {
+		log.Println(err.Error())
 		return dto.User{}, err
 	}
 
-	// users = append(users, User{
-	// 	Id:       id,
-	// 	Email:    newUser.Email,
-	// 	Password: hp,
-	// 	Role:     newUser.Role,
-	// })
-	// id++
-	data, e := u.userRepository.CreateNewUser(ctx, newUser, hp)
+	// begin trx
+	tx, err := u.db.Begin(ctx)
+	if err != nil {
+		log.Println(err.Error())
+		return dto.User{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	// userRepo := repository.NewUserRepository(tx)
+
+	data, e := u.userRepository.CreateNewUser(ctx, tx, newUser, hp)
 	if e != nil {
+		log.Println(e.Error())
 		return dto.User{}, e
 	}
+	// create profile
+	if _, e := u.userRepository.CreateNewProfile(ctx, tx, data.Id); e != nil {
+		log.Println(e.Error())
+		return dto.User{}, e
+	}
+
+	if e := tx.Commit(ctx); e != nil {
+		log.Println("failed to commit", e.Error())
+		return dto.User{}, e
+	}
+
 	user := dto.User{
 		Email:  data.Email,
 		Gender: data.Gender,
@@ -161,7 +180,7 @@ func (u *UserService) Login(ctx context.Context, email string, password string) 
 	// 	}
 	// }
 	// log.Println(hp, len(hp))
-	user, e := u.userRepository.GetPwdFromEmail(ctx, email)
+	user, e := u.userRepository.GetPwdFromEmail(ctx, u.db, email)
 	if e != nil {
 		return dto.User{}, e
 	}

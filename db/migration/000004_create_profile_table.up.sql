@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS profile (
+    user_id INT REFERENCES users(id) PRIMARY KEY
+);

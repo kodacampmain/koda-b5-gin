@@ -13,9 +13,9 @@ import (
 func RegisterUserRouter(app *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userRouter := app.Group("/users")
 
-	userRepository := repository.NewUserRepository(db)
+	userRepository := repository.NewUserRepository()
 	// userRepository := repository.NewUserRepositoryMock()
-	userService := service.NewUserService(userRepository, rdb)
+	userService := service.NewUserService(userRepository, rdb, db)
 	// userv2Service := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)
 
